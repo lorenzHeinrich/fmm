@@ -16,7 +16,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <ogrsf_frmts.h>
+#include <gdal_priv.h>
 
 namespace FMM {
 /**
@@ -93,7 +93,7 @@ private:
   int id_idx = -1;   // Index of the id column in shapefile
   int timestamp_idx = -1;   // Index of the id column in shapefile
   int _cursor = 0;   // Keep record of current features read
-  OGRDataSource *poDS;
+  GDALDataset *poDS;
   OGRLayer *ogrlayer;
 }; // TrajectoryReader
 

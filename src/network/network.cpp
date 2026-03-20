@@ -71,7 +71,8 @@ void Network::read_ogr_file(const std::string &filename,
                             const std::string &target_name) {
   SPDLOG_INFO("Read network from file {}", filename);
   OGRRegisterAll();
-  OGRDataSource *poDS = OGRSFDriverRegistrar::Open(filename.c_str(), FALSE);
+  GDALDataset *poDS = (GDALDataset *) GDALOpenEx(
+    filename.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
   if (poDS == NULL) {
     std::string message = "Open dataset failed.";
     SPDLOG_CRITICAL(message);
@@ -94,7 +95,7 @@ void Network::read_ogr_file(const std::string &filename,
       id_name, id_idx, source_name, source_idx,
       target_name, target_idx);
     SPDLOG_CRITICAL(error_message);
-    OGRDataSource::DestroyDataSource(poDS);
+    GDALClose(poDS);
     throw std::runtime_error(error_message);
   }
 
@@ -103,13 +104,13 @@ void Network::read_ogr_file(const std::string &filename,
       "Geometry type of network is {}, should be linestring",
       OGRGeometryTypeToName(ogrFDefn->GetGeomType()));
     SPDLOG_CRITICAL(error_message);
-    OGRDataSource::DestroyDataSource(poDS);
+    GDALClose(poDS);
     throw std::runtime_error(error_message);
   } else {
     SPDLOG_DEBUG("Geometry type of network is {}",
                  OGRGeometryTypeToName(ogrFDefn->GetGeomType()));
   }
-  OGRSpatialReference *ogrsr = ogrFDefn->GetGeomFieldDefn(0)->GetSpatialRef();
+  const OGRSpatialReference *ogrsr = ogrFDefn->GetGeomFieldDefn(0)->GetSpatialRef();
   if (ogrsr != nullptr) {
     srid = ogrsr->GetEPSGGeogCS();
     if (srid == -1) {
@@ -164,7 +165,7 @@ void Network::read_ogr_file(const std::string &filename,
     ++index;
     OGRFeature::DestroyFeature(ogrFeature);
   }
-  OGRDataSource::DestroyDataSource(poDS);
+  GDALClose(poDS);
   num_vertices = node_id_vec.size();
   SPDLOG_INFO("Number of edges {} nodes {}", edges.size(), num_vertices);
   SPDLOG_INFO("Field index: id {} source {} target {}",

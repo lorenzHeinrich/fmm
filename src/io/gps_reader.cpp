@@ -44,7 +44,8 @@ GDALTrajectoryReader::GDALTrajectoryReader(const std::string &filename,
                                            const std::string &timestamp_name) {
   SPDLOG_INFO("Read trajectory from file {}",filename);
   OGRRegisterAll();
-  poDS = OGRSFDriverRegistrar::Open(filename.c_str(), FALSE);
+  poDS = (GDALDataset *) GDALOpenEx(
+      filename.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
   if (poDS == NULL) {
     std::string message = "Open data source fail";
     SPDLOG_CRITICAL(message);
@@ -60,7 +61,7 @@ GDALTrajectoryReader::GDALTrajectoryReader(const std::string &filename,
   if (id_idx < 0) {
     std::string message = (boost::format("Id column %1% not found") % id_name).str();
     SPDLOG_CRITICAL(message);
-    OGRDataSource::DestroyDataSource(poDS);
+    GDALClose(poDS);
     throw std::runtime_error(message);
   }
   timestamp_idx = ogrFDefn->GetFieldIndex(timestamp_name.c_str());
@@ -71,7 +72,7 @@ GDALTrajectoryReader::GDALTrajectoryReader(const std::string &filename,
     std::string message = (boost::format("Geometry type is %1%, which should be linestring") %
             OGRGeometryTypeToName(ogrFDefn->GetGeomType())).str();
     SPDLOG_CRITICAL(message);
-    OGRDataSource::DestroyDataSource(poDS);
+    GDALClose(poDS);
     throw std::runtime_error(message);
   } else {
     SPDLOG_DEBUG("Geometry type is {}",
@@ -105,7 +106,7 @@ int GDALTrajectoryReader::get_num_trajectories() {
 }
 
 void GDALTrajectoryReader::close() {
-  OGRDataSource::DestroyDataSource(poDS);
+  GDALClose(poDS);
 }
 
 CSVTrajectoryReader::CSVTrajectoryReader(const std::string &e_filename,
