@@ -71,8 +71,7 @@ void Network::read_ogr_file(const std::string &filename,
                             const std::string &target_name) {
   SPDLOG_INFO("Read network from file {}", filename);
   OGRRegisterAll();
-  GDALDataset *poDS = (GDALDataset *) GDALOpenEx(
-    filename.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
+  OGRDataSource *poDS = OGRSFDriverRegistrar::Open(filename.c_str(), FALSE);
   if (poDS == NULL) {
     std::string message = "Open dataset failed.";
     SPDLOG_CRITICAL(message);
@@ -95,7 +94,7 @@ void Network::read_ogr_file(const std::string &filename,
       id_name, id_idx, source_name, source_idx,
       target_name, target_idx);
     SPDLOG_CRITICAL(error_message);
-    GDALClose(poDS);
+    OGRDataSource::DestroyDataSource(poDS);
     throw std::runtime_error(error_message);
   }
 
@@ -104,7 +103,7 @@ void Network::read_ogr_file(const std::string &filename,
       "Geometry type of network is {}, should be linestring",
       OGRGeometryTypeToName(ogrFDefn->GetGeomType()));
     SPDLOG_CRITICAL(error_message);
-    GDALClose(poDS);
+    OGRDataSource::DestroyDataSource(poDS);
     throw std::runtime_error(error_message);
   } else {
     SPDLOG_DEBUG("Geometry type of network is {}",
@@ -126,9 +125,9 @@ void Network::read_ogr_file(const std::string &filename,
   // Read data from shapefile
   EdgeIndex index = 0;
   while ((ogrFeature = ogrlayer->GetNextFeature()) != NULL) {
-    EdgeID id = ogrFeature->GetFieldAsInteger64(id_idx);
-    NodeID source = ogrFeature->GetFieldAsInteger64(source_idx);
-    NodeID target = ogrFeature->GetFieldAsInteger64(target_idx);
+    EdgeID id = ogrFeature->GetFieldAsInteger(id_idx);
+    NodeID source = ogrFeature->GetFieldAsInteger(source_idx);
+    NodeID target = ogrFeature->GetFieldAsInteger(target_idx);
     OGRGeometry *rawgeometry = ogrFeature->GetGeometryRef();
     LineString geom;
     if (rawgeometry->getGeometryType() == wkbLineString) {
@@ -165,7 +164,7 @@ void Network::read_ogr_file(const std::string &filename,
     ++index;
     OGRFeature::DestroyFeature(ogrFeature);
   }
-  GDALClose(poDS);
+  OGRDataSource::DestroyDataSource(poDS);
   num_vertices = node_id_vec.size();
   SPDLOG_INFO("Number of edges {} nodes {}", edges.size(), num_vertices);
   SPDLOG_INFO("Field index: id {} source {} target {}",

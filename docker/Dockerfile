@@ -14,6 +14,6 @@ RUN rm -rf build
 RUN mkdir -p build && \
     cd build && \
     cmake .. && \
-    make install
+    make -j"$(nproc)" install
 EXPOSE 8080
 CMD
