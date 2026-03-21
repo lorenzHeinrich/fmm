@@ -92,7 +92,7 @@ bool GDALTrajectoryReader::has_timestamp() {
 
 Trajectory GDALTrajectoryReader::read_next_trajectory() {
   OGRFeature *ogrFeature = ogrlayer->GetNextFeature();
-  int trid = ogrFeature->GetFieldAsInteger(id_idx);
+  int trid = ogrFeature->GetFieldAsInteger64(id_idx);
   OGRGeometry *rawgeometry = ogrFeature->GetGeometryRef();
   FMM::CORE::LineString linestring =
     FMM::CORE::ogr2linestring((OGRLineString *) rawgeometry);

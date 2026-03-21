@@ -126,9 +126,9 @@ void Network::read_ogr_file(const std::string &filename,
   // Read data from shapefile
   EdgeIndex index = 0;
   while ((ogrFeature = ogrlayer->GetNextFeature()) != NULL) {
-    EdgeID id = ogrFeature->GetFieldAsInteger(id_idx);
-    NodeID source = ogrFeature->GetFieldAsInteger(source_idx);
-    NodeID target = ogrFeature->GetFieldAsInteger(target_idx);
+    EdgeID id = ogrFeature->GetFieldAsInteger64(id_idx);
+    NodeID source = ogrFeature->GetFieldAsInteger64(source_idx);
+    NodeID target = ogrFeature->GetFieldAsInteger64(target_idx);
     OGRGeometry *rawgeometry = ogrFeature->GetGeometryRef();
     LineString geom;
     if (rawgeometry->getGeometryType() == wkbLineString) {
