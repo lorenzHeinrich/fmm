@@ -1,0 +1,14 @@
+.git
+.github
+.gitignore
+.venv
+build
+cmake-build-*
+__pycache__/
+*.pyc
+*.pyo
+*.swp
+*.swo
+*.log
+.vscode
+.idea

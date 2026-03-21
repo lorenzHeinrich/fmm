@@ -1,17 +1,10 @@
-FROM ubuntu:noble
+FROM ubuntu:noble AS builder
 ARG DEBIAN_FRONTEND=noninteractive
 
-# from https://fmm-wiki.github.io/docs/installation/ubuntu.html
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     ca-certificates \
     build-essential \
-    # gpg-agent \
-    # software-properties-common \
-    # && add-apt-repository -y ppa:ubuntugis/ppa \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
-    # git \
     libboost-dev \
     libboost-serialization-dev \
     gdal-bin \
@@ -25,17 +18,44 @@ RUN apt-get update \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# RUN git clone https://github.com/cyang-kth/fmm.git \
-#     && sed -i 's/OGRSpatialReference \*ogrsr =/const OGRSpatialReference *ogrsr =/' fmm/src/network/network.cpp
-#
-RUN mkdir -p /fmm
-COPY . /fmm
 WORKDIR /fmm
-RUN rm -rf build
+COPY . /fmm
+
 RUN mkdir -p build \
     && cd build \
     && cmake .. \
     && make -j"$(nproc)" \
     && make install
 
-CMD ["bash"]
+RUN py_site="$(python3 -c 'import sysconfig; print(sysconfig.get_path("purelib"))')" \
+    && mkdir -p /opt/fmm/bin /opt/fmm/lib /opt/fmm/python \
+    && cp -a /usr/local/bin/fmm /usr/local/bin/ubodt_gen /usr/local/bin/stmatch /usr/local/bin/h3mm /opt/fmm/bin/ \
+    && cp -a /usr/local/lib/libFMMLIB.so* /opt/fmm/lib/ \
+    && cp -a "$py_site/fmm.py" "$py_site"/_fmm*.so /opt/fmm/python/
+
+FROM ubuntu:noble AS runtime
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    python3 \
+    libgdal34 \
+    libboost-serialization1.83.0 \
+    libgomp1 \
+    libbz2-1.0 \
+    libexpat1 \
+    libstdc++6 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /opt/fmm/bin/ /usr/local/bin/
+COPY --from=builder /opt/fmm/lib/ /usr/local/lib/
+COPY --from=builder /opt/fmm/python/ /opt/fmm/python/
+
+RUN py_site="$(python3 -c 'import sysconfig; print(sysconfig.get_path("purelib"))')" \
+    && mkdir -p "$py_site" \
+    && cp -a /opt/fmm/python/. "$py_site"/ \
+    && echo "/usr/local/lib" > /etc/ld.so.conf.d/fmm.conf \
+    && ldconfig
+
+CMD ["fmm"]
