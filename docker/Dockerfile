@@ -40,6 +40,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     ca-certificates \
     python3 \
+    libpython3.12 \
     libgdal34 \
     libboost-serialization1.83.0 \
     libgomp1 \
